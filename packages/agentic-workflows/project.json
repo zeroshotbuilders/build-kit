@@ -1,0 +1,29 @@
+{
+  "name": "agentic-workflows",
+  "sourceRoot": "packages/agentic-workflows/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/agentic-workflows",
+        "main": "packages/agentic-workflows/src/index.ts",
+        "tsConfig": "packages/agentic-workflows/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/agentic-workflows/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/agentic-workflows/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

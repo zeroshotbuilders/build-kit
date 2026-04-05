@@ -1,0 +1,17 @@
+{
+  "name": "@zeroshotbuilders/commons-testing",
+  "version": "0.0.1",
+  "type": "commonjs",
+  "main": "./src/index.ts",
+  "publishConfig": {
+    "main": "./index.js",
+    "types": "./index.d.ts",
+    "access": "public"
+  },
+  "dependencies": {
+    "testcontainers": "^10.24.0"
+  },
+  "peerDependencies": {
+    "@zeroshotbuilders/commons": ">=0.0.1"
+  }
+}

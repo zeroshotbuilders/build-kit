@@ -1,0 +1,9 @@
+local: true
+port: 8080
+redis:
+  host: localhost
+testingBullQueue:
+  attempts: 4
+  backoff:
+    type: "exponential"
+    delay: 1

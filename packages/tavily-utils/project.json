@@ -1,0 +1,29 @@
+{
+  "name": "tavily-utils",
+  "sourceRoot": "packages/tavily-utils/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/tavily-utils",
+        "main": "packages/tavily-utils/src/index.ts",
+        "tsConfig": "packages/tavily-utils/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/tavily-utils/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/tavily-utils/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

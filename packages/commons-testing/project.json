@@ -1,0 +1,29 @@
+{
+  "name": "commons-testing",
+  "sourceRoot": "packages/commons-testing/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/commons-testing",
+        "main": "packages/commons-testing/src/index.ts",
+        "tsConfig": "packages/commons-testing/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/commons-testing/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/commons-testing/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

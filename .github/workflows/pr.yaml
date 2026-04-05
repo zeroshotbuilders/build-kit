@@ -1,0 +1,32 @@
+name: build-kit PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Fetch main branch
+        run: git fetch origin main --depth=1
+
+      - name: Lint
+        run: yarn nx affected --target=lint --base=remotes/origin/main
+
+      - name: Test
+        run: yarn nx affected --target=test --base=remotes/origin/main
