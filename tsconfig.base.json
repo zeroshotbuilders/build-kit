@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2022",
+    "lib": ["es2022"],
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "removeComments": true,
+    "incremental": true,
+    "types": ["reflect-metadata"],
+    "paths": {
+      "@zeroshotbuilders/commons": ["packages/commons/index.ts"],
+      "@zeroshotbuilders/commons-testing": ["packages/commons-testing/index.ts"],
+      "@zeroshotbuilders/agentic-workflows": ["packages/agentic-workflows/index.ts"],
+      "@zeroshotbuilders/openai-utils": ["packages/openai-utils/index.ts"],
+      "@zeroshotbuilders/sql-decorators": ["packages/sql-decorators/index.ts"],
+      "@zeroshotbuilders/tavily-utils": ["packages/tavily-utils/index.ts"]
+    }
+  },
+  "exclude": ["node_modules"]
+}

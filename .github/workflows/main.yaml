@@ -1,0 +1,60 @@
+name: build-kit main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: main-build
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, 'v0') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set git user
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Fast-forward to latest main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Bump version
+        run: yarn lerna version -y 'patch' --force-publish
+
+      - name: Build
+        run: yarn nx run-many --target=build
+
+      - name: Publish to npm
+        run: |
+          for pkg in commons commons-testing sql-decorators openai-utils tavily-utils agentic-workflows; do
+            npm publish "dist/packages/$pkg" --access public || true
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,29 @@
+{
+  "name": "openai-utils",
+  "sourceRoot": "packages/openai-utils/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/openai-utils",
+        "main": "packages/openai-utils/src/index.ts",
+        "tsConfig": "packages/openai-utils/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/openai-utils/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/openai-utils/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

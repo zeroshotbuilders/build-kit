@@ -1,0 +1,56 @@
+# compiled output
+dist
+node_modules/
+ctrf
+*.tsbuildinfo
+
+# Generated OpenAPI Compilation Outputs
+**/src/generated
+
+# generated outputs
+*package.json.lerna_backup
+tmp
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+signature.js
+
+# OS
+.DS_Store
+
+# npm
+.npmrc
+
+# ENV
+.env
+
+# Tests
+coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.yarn/install-state.gz
+.yarn/cache
+
+# nx
+.nx

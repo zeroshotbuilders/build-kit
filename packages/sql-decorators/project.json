@@ -1,0 +1,29 @@
+{
+  "name": "sql-decorators",
+  "sourceRoot": "packages/sql-decorators/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/sql-decorators",
+        "main": "packages/sql-decorators/src/index.ts",
+        "tsConfig": "packages/sql-decorators/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/sql-decorators/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/sql-decorators/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}
