@@ -1,0 +1,7 @@
+local: false
+port: 3000
+
+aiAgent:
+  provider: ollama
+  ollamaBaseUrl: http://localhost:11434
+  defaultModel: "qwen2.5:latest"

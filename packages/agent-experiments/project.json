@@ -1,0 +1,41 @@
+{
+  "name": "agent-experiments",
+  "sourceRoot": "packages/agent-experiments/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/agent-experiments",
+        "main": "packages/agent-experiments/src/index.ts",
+        "tsConfig": "packages/agent-experiments/tsconfig.lib.json",
+        "assets": [
+          {
+            "glob": "**/*.md",
+            "input": "packages/agent-experiments/src",
+            "output": "src"
+          },
+          {
+            "glob": "**/*",
+            "input": "packages/agent-experiments/assets",
+            "output": "assets"
+          }
+        ]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/agent-experiments/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/agent-experiments/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

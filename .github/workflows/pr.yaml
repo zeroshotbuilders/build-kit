@@ -2,7 +2,7 @@ name: build-kit PR
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   ci:
@@ -28,5 +28,5 @@ jobs:
       - name: Lint
         run: yarn nx affected --target=lint --base=remotes/origin/main
 
-      - name: Test
-        run: yarn nx affected --target=test --base=remotes/origin/main
+      - name: Test (non-eval)
+        run: yarn nx affected --target=test --base=remotes/origin/main --testPathIgnorePatterns=".*\\.eval\\.spec\\.ts"
