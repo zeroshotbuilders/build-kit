@@ -1,0 +1,20 @@
+{
+  "name": "@zeroshotbuilders/agent-experiments",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./src/index.ts",
+  "dependencies": {
+    "pdfkit": "^0.16.0",
+    "unpdf": "^1.4.0"
+  },
+  "devDependencies": {
+    "@zeroshotbuilders/commons-testing": "*"
+  },
+  "peerDependencies": {
+    "@nestjs/common": ">=10.0.0",
+    "@nestjs/core": ">=10.0.0",
+    "@zeroshotbuilders/agentic-workflows": ">=0.0.1",
+    "@zeroshotbuilders/commons": ">=0.0.1"
+  }
+}
