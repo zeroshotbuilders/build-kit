@@ -1,6 +1,6 @@
 {
   "name": "@zeroshotbuilders/agent-experiments",
-  "version": "0.0.0",
+  "version": "0.0.3",
   "private": true,
   "type": "commonjs",
   "main": "./src/index.ts",
@@ -9,7 +9,7 @@
     "unpdf": "^1.4.0"
   },
   "devDependencies": {
-    "@zeroshotbuilders/commons-testing": "*"
+    "@zeroshotbuilders/commons-testing": "^0.0.3"
   },
   "peerDependencies": {
     "@nestjs/common": ">=10.0.0",
