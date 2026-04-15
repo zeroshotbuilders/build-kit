@@ -5,11 +5,11 @@
   "type": "commonjs",
   "main": "./src/index.ts",
   "dependencies": {
-    "pdfkit": "^0.16.0",
-    "unpdf": "^1.4.0"
+    "pdfkit": "^0.16.0"
   },
   "devDependencies": {
-    "@zeroshotbuilders/commons-testing": "^0.0.3"
+    "@zeroshotbuilders/commons-testing": "^0.0.3",
+    "@zeroshotbuilders/docling-utils": "^0.0.3"
   },
   "peerDependencies": {
     "@nestjs/common": ">=10.0.0",

@@ -2,54 +2,78 @@ import {
   SalaryExtractionAgent,
   SalaryExtractionModule
 } from "@zeroshotbuilders/agent-experiments";
+import { Closer } from "@zeroshotbuilders/commons";
+import {
+  BeforeAllTimeout,
+  DoclingContainer
+} from "@zeroshotbuilders/commons-testing";
+import { DoclingServiceRemote } from "@zeroshotbuilders/docling-utils";
 import { NestFactory } from "@nestjs/core";
-import { execFileSync } from "child_process";
+import fs from "fs";
 import path from "path";
 import { generateAllFixtures } from "./assets/generate-fixtures";
 
 const FIXTURES_DIR = path.join(__dirname, "assets", "fixtures");
-const EXTRACT_SCRIPT = path.join(__dirname, "assets", "extract-pdf-text.mjs");
 const APPLICATION_ROOT = path.join(__dirname, "..", "assets");
-
-function readPdf(filePath: string): string {
-  return execFileSync("node", [EXTRACT_SCRIPT, filePath], {
-    encoding: "utf-8",
-    timeout: 15_000
-  });
-}
-
-function loadDocuments(
-  filenames: string[]
-): Array<{ filename: string; text: string }> {
-  return filenames.map((filename) => ({
-    filename,
-    text: readPdf(path.join(FIXTURES_DIR, filename))
-  }));
-}
 
 jest.setTimeout(300_000);
 
 describe("Salary Extraction Pipeline", () => {
   let agent: SalaryExtractionAgent;
-  let app: any;
+  let closer: Closer;
+  let doclingService: DoclingServiceRemote;
+  const docling = new DoclingContainer();
+
+  async function convertPdf(filePath: string): Promise<string> {
+    const file = fs.readFileSync(filePath);
+    const filename = path.basename(filePath);
+
+    const result = await doclingService.convert({ file, filename });
+    return result.content;
+  }
+
+  function loadDocuments(
+    filenames: string[]
+  ): Promise<Array<{ filename: string; text: string }>> {
+    return Promise.all(
+      filenames.map(async (filename) => ({
+        filename,
+        text: await convertPdf(path.join(FIXTURES_DIR, filename))
+      }))
+    );
+  }
 
   beforeAll(async () => {
     await generateAllFixtures();
+    await docling.start();
 
-    app = await NestFactory.createApplicationContext(
+    doclingService = new DoclingServiceRemote({
+      baseUrl: docling.getBaseUrl()
+    } as any);
+
+    const app = await NestFactory.createApplicationContext(
       SalaryExtractionModule.forApplicationRoot(APPLICATION_ROOT)
     );
     agent = app.get(SalaryExtractionAgent);
-  });
+
+    closer = Closer.create(
+      {
+        resource: app,
+        closingFunction: async (a) => await a.close()
+      },
+      {
+        resource: docling,
+        closingFunction: async (d) => await d.stop()
+      }
+    );
+  }, BeforeAllTimeout);
 
   afterAll(async () => {
-    if (app) {
-      await app.close();
-    }
+    if (closer) await closer.close();
   });
 
   it("should extract salary from ACME paystub + W-2 + offer letter", async () => {
-    const documents = loadDocuments([
+    const documents = await loadDocuments([
       "paystub-acme-biweekly.pdf",
       "w2-acme-2024.pdf",
       "offer-letter-acme.pdf"
@@ -67,7 +91,7 @@ describe("Salary Extraction Pipeline", () => {
   });
 
   it("should extract salary from TechForward monthly paystub + verification letter", async () => {
-    const documents = loadDocuments([
+    const documents = await loadDocuments([
       "paystub-techforward-monthly.pdf",
       "employment-verification-techforward.pdf"
     ]);
@@ -83,7 +107,7 @@ describe("Salary Extraction Pipeline", () => {
   });
 
   it("should extract salary from Greenleaf weekly paystub alone", async () => {
-    const documents = loadDocuments(["paystub-greenleaf-weekly.pdf"]);
+    const documents = await loadDocuments(["paystub-greenleaf-weekly.pdf"]);
 
     const result = await agent.extractSalary(documents);
 
@@ -95,7 +119,7 @@ describe("Salary Extraction Pipeline", () => {
   });
 
   it("should handle all documents together and pick best estimate", async () => {
-    const documents = loadDocuments([
+    const documents = await loadDocuments([
       "paystub-acme-biweekly.pdf",
       "w2-acme-2024.pdf",
       "offer-letter-acme.pdf",

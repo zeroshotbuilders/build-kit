@@ -1,0 +1,29 @@
+{
+  "name": "docling-utils",
+  "sourceRoot": "packages/docling-utils/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/docling-utils",
+        "main": "packages/docling-utils/src/index.ts",
+        "tsConfig": "packages/docling-utils/tsconfig.lib.json"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "packages/docling-utils/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/docling-utils/**/*.ts"]
+      }
+    }
+  },
+  "tags": []
+}

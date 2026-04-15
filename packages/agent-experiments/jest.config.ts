@@ -5,7 +5,6 @@ export default {
   transform: {
     "^.+\\.[tj]s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }]
   },
-  transformIgnorePatterns: ["node_modules/(?!unpdf)"],
-  moduleFileExtensions: ["ts", "js", "mjs", "html"],
+  moduleFileExtensions: ["ts", "js", "html"],
   coverageDirectory: "../../coverage/packages/agent-experiments"
 };
