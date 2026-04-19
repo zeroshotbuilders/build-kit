@@ -1,6 +1,6 @@
 {
   "name": "@zeroshotbuilders/agent-experiments",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "private": true,
   "type": "commonjs",
   "main": "./src/index.ts",
@@ -8,8 +8,8 @@
     "pdfkit": "^0.16.0"
   },
   "devDependencies": {
-    "@zeroshotbuilders/commons-testing": "^0.0.4",
-    "@zeroshotbuilders/docling-utils": "^0.0.4"
+    "@zeroshotbuilders/commons-testing": "^0.0.5",
+    "@zeroshotbuilders/docling-utils": "^0.0.5"
   },
   "peerDependencies": {
     "@nestjs/common": ">=10.0.0",
