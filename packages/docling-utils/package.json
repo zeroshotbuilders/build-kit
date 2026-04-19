@@ -8,7 +8,6 @@
     "types": "./index.d.ts",
     "access": "public"
   },
-  "dependencies": {},
   "peerDependencies": {
     "@nestjs/common": ">=10.0.0",
     "@zeroshotbuilders/commons": ">=0.0.1"
