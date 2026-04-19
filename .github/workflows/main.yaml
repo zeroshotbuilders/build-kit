@@ -53,7 +53,7 @@ jobs:
 
       - name: Publish to npm
         run: |
-          for pkg in commons commons-testing sql-decorators openai-utils tavily-utils agentic-workflows; do
+          for pkg in commons commons-testing sql-decorators openai-utils tavily-utils agentic-workflows docling-utils; do
             npm publish "dist/packages/$pkg" --access public || true
           done
         env:

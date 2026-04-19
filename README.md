@@ -12,6 +12,7 @@ Reusable TypeScript infrastructure libraries by [Zeroshot Builders](https://www.
 | `@zeroshotbuilders/openai-utils` | OpenAI client factory and service |
 | `@zeroshotbuilders/tavily-utils` | Tavily search client and tool definitions |
 | `@zeroshotbuilders/agentic-workflows` | AI agent orchestration — @Agent decorator, session management |
+| `@zeroshotbuilders/docling-utils` | Docling document conversion client and service |
 
 ## Prerequisites
 
