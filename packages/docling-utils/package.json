@@ -1,0 +1,15 @@
+{
+  "name": "@zeroshotbuilders/docling-utils",
+  "version": "0.0.3",
+  "type": "commonjs",
+  "main": "./src/index.ts",
+  "publishConfig": {
+    "main": "./index.js",
+    "types": "./index.d.ts",
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@nestjs/common": ">=10.0.0",
+    "@zeroshotbuilders/commons": ">=0.0.1"
+  }
+}

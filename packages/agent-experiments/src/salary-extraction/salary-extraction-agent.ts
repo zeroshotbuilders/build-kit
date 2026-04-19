@@ -1,70 +1,27 @@
 import {
-  AgenticWorkflow,
   Agent,
+  AgenticWorkflow,
   AgentRunResult,
-  AiAgentService,
-  AI_AGENT_SERVICE
+  AI_AGENT_SERVICE,
+  AiAgentService
 } from "@zeroshotbuilders/agentic-workflows";
 import { Inject, Injectable } from "@nestjs/common";
 import { createLogger, transports } from "winston";
-import { z } from "zod";
+import {
+  DocumentClassification,
+  DocumentClassificationSchema,
+  PayDataExtraction,
+  PayDataExtractionSchema,
+  SalaryCalculation
+} from "./salary-extraction-schemas";
 
-// ── Output Schemas ──────────────────────────────────────────────────────────
-
-export const DocumentClassificationSchema = z.object({
-  documentType: z.enum([
-    "paystub",
-    "w2",
-    "offer_letter",
-    "employment_verification",
-    "tax_return",
-    "unknown"
-  ]),
-  employeeName: z.string(),
-  employerName: z.string(),
-  confidence: z.number().min(0).max(1)
-});
-
-export type DocumentClassification = z.infer<
-  typeof DocumentClassificationSchema
->;
-
-export const PayDataExtractionSchema = z.object({
-  documentType: z.string(),
-  employeeName: z.string(),
-  employerName: z.string(),
-  payPeriod: z.string().nullable(),
-  payFrequency: z
-    .enum(["weekly", "biweekly", "semi_monthly", "monthly", "annual", "unknown"])
-    .nullable(),
-  grossPayThisPeriod: z.number().nullable(),
-  grossPayYtd: z.number().nullable(),
-  annualSalaryStated: z.number().nullable(),
-  hourlyRate: z.number().nullable(),
-  hoursWorked: z.number().nullable()
-});
-
-export type PayDataExtraction = z.infer<typeof PayDataExtractionSchema>;
-
-export const SalaryCalculationSchema = z.object({
-  annualSalary: z.number(),
-  confidence: z.number().min(0).max(1),
-  methodology: z.string(),
-  employeeName: z.string(),
-  employerName: z.string(),
-  documentsAnalyzed: z.number(),
-  breakdown: z.array(
-    z.object({
-      source: z.string(),
-      derivedAnnualSalary: z.number().nullable(),
-      notes: z.string()
-    })
-  )
-});
-
-export type SalaryCalculation = z.infer<typeof SalaryCalculationSchema>;
-
-// ── Agent Pipeline ──────────────────────────────────────────────────────────
+const PERIODS_PER_YEAR: Record<string, number> = {
+  weekly: 52,
+  biweekly: 26,
+  semi_monthly: 24,
+  monthly: 12,
+  annual: 1
+};
 
 @AgenticWorkflow({
   promptsDirectory: `${__dirname}/prompts`
@@ -80,36 +37,15 @@ export class SalaryExtractionAgent {
     private readonly aiAgentService: AiAgentService
   ) {}
 
-  /**
-   * Main pipeline entry point: takes an array of document texts and returns
-   * the computed annual salary.
-   */
   async extractSalary(
     documents: Array<{ filename: string; text: string }>
   ): Promise<SalaryCalculation> {
-    this.logger.info(
-      `Starting salary extraction pipeline with ${documents.length} documents`
-    );
-
     // Phase 1: Classify all documents
     const classifications = await Promise.all(
       documents.map(async (doc) => {
         const result = await this.classifyDocument(doc.filename, doc.text);
-        if (!result.success) {
-          this.logger.warn(
-            `Classification failed for ${doc.filename}: ${result.error}`
-          );
-        }
         return { ...doc, classification: result.output };
       })
-    );
-
-    this.logger.info(
-      "Classifications complete",
-      classifications.map((c) => ({
-        file: c.filename,
-        type: c.classification?.documentType
-      }))
     );
 
     // Phase 2: Extract pay data from each document
@@ -120,41 +56,107 @@ export class SalaryExtractionAgent {
           doc.filename,
           doc.text
         );
-        if (!result.success) {
-          this.logger.warn(
-            `Extraction failed for ${doc.filename}: ${result.error}`
-          );
-        }
         return { filename: doc.filename, extraction: result.output };
       })
     );
 
-    this.logger.info("Extractions complete");
+    // Phase 3: Calculate annual salary deterministically
+    return this.calculateSalary(extractions);
+  }
 
-    // Phase 3: Calculate annual salary from all extractions
-    const extractionSummary = JSON.stringify(
-      extractions.map((e) => ({
-        filename: e.filename,
-        ...e.extraction
-      })),
-      null,
-      2
-    );
+  private calculateSalary(
+    extractions: Array<{ filename: string; extraction: PayDataExtraction }>
+  ): SalaryCalculation {
+    const breakdown: SalaryCalculation["breakdown"] = [];
+    let bestSalary: number | null = null;
+    let bestConfidence = 0;
+    let methodology = "";
+    let employeeName = "";
+    let employerName = "";
 
-    const result = await this.calculateSalary(extractionSummary);
-    if (!result.success) {
-      throw new Error(`Salary calculation failed: ${result.error}`);
+    for (const { filename, extraction } of extractions) {
+      if (!employeeName && extraction.employeeName) {
+        employeeName = extraction.employeeName;
+      }
+      if (!employerName && extraction.employerName) {
+        employerName = extraction.employerName;
+      }
+
+      let derived: number | null = null;
+      let notes = "";
+
+      // Priority 1: Directly stated annual salary (pick the highest across docs)
+      if (extraction.annualSalaryStated != null) {
+        derived = extraction.annualSalaryStated;
+        notes = `Directly stated annual salary: $${derived.toLocaleString()}`;
+        if (bestConfidence < 1 || derived > (bestSalary ?? 0)) {
+          bestSalary = derived;
+          bestConfidence = 1;
+          methodology = `Directly stated in ${filename}`;
+        }
+      }
+
+      // Priority 2: Gross pay * periods per year
+      if (
+        derived == null &&
+        extraction.grossPayThisPeriod != null &&
+        extraction.payFrequency != null &&
+        PERIODS_PER_YEAR[extraction.payFrequency] != null
+      ) {
+        const periods = PERIODS_PER_YEAR[extraction.payFrequency];
+        derived = extraction.grossPayThisPeriod * periods;
+        notes =
+          `$${extraction.grossPayThisPeriod.toLocaleString()} × ` +
+          `${periods} (${extraction.payFrequency}) = $${derived.toLocaleString()}`;
+        if (bestConfidence < 0.9) {
+          bestSalary = derived;
+          bestConfidence = 0.9;
+          methodology = `Period-to-annual from ${filename}: ${notes}`;
+        }
+      }
+
+      // Priority 3: Hourly rate * hours * periods
+      if (
+        derived == null &&
+        extraction.hourlyRate != null &&
+        extraction.hoursWorked != null &&
+        extraction.payFrequency != null &&
+        PERIODS_PER_YEAR[extraction.payFrequency] != null
+      ) {
+        const periods = PERIODS_PER_YEAR[extraction.payFrequency];
+        derived = extraction.hourlyRate * extraction.hoursWorked * periods;
+        notes =
+          `$${extraction.hourlyRate}/hr × ${extraction.hoursWorked}hrs × ` +
+          `${periods} periods = $${derived.toLocaleString()}`;
+        if (bestConfidence < 0.8) {
+          bestSalary = derived;
+          bestConfidence = 0.8;
+          methodology = `Hourly calculation from ${filename}: ${notes}`;
+        }
+      }
+
+      if (derived == null) {
+        notes = "Could not derive annual salary from this document";
+      }
+
+      breakdown.push({ source: filename, derivedAnnualSalary: derived, notes });
     }
 
     this.logger.info("Salary calculation complete", {
-      annualSalary: result.output.annualSalary,
-      confidence: result.output.confidence
+      annualSalary: bestSalary,
+      confidence: bestConfidence
     });
 
-    return result.output;
+    return {
+      annualSalary: bestSalary ?? 0,
+      confidence: bestConfidence,
+      methodology,
+      employeeName,
+      employerName,
+      documentsAnalyzed: extractions.length,
+      breakdown
+    };
   }
-
-  // ── Agent Methods (intercepted by decorator) ─────────────────────────────
 
   @Agent<DocumentClassification>({
     outputSchema: DocumentClassificationSchema
@@ -163,7 +165,7 @@ export class SalaryExtractionAgent {
     filename: string,
     documentText: string
   ): Promise<AgentRunResult<DocumentClassification>> {
-    return null as any;
+    return null;
   }
 
   @Agent<PayDataExtraction>({
@@ -174,15 +176,6 @@ export class SalaryExtractionAgent {
     filename: string,
     documentText: string
   ): Promise<AgentRunResult<PayDataExtraction>> {
-    return null as any;
-  }
-
-  @Agent<SalaryCalculation>({
-    outputSchema: SalaryCalculationSchema
-  })
-  private async calculateSalary(
-    extractedData: string
-  ): Promise<AgentRunResult<SalaryCalculation>> {
-    return null as any;
+    return null;
   }
 }

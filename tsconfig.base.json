@@ -30,6 +30,7 @@
       "@zeroshotbuilders/openai-utils": ["packages/openai-utils/index.ts"],
       "@zeroshotbuilders/sql-decorators": ["packages/sql-decorators/index.ts"],
       "@zeroshotbuilders/tavily-utils": ["packages/tavily-utils/index.ts"],
+      "@zeroshotbuilders/docling-utils": ["packages/docling-utils/index.ts"],
       "@zeroshotbuilders/agent-experiments": ["packages/agent-experiments/index.ts"]
     }
   },
