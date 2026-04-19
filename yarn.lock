@@ -4338,8 +4338,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@zeroshotbuilders/agent-experiments@workspace:packages/agent-experiments"
   dependencies:
-    "@zeroshotbuilders/commons-testing": "npm:^0.0.3"
-    "@zeroshotbuilders/docling-utils": "npm:^0.0.3"
+    "@zeroshotbuilders/commons-testing": "npm:^0.0.4"
+    "@zeroshotbuilders/docling-utils": "npm:^0.0.4"
     pdfkit: "npm:^0.16.0"
   peerDependencies:
     "@nestjs/common": ">=10.0.0"
@@ -4362,7 +4362,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@zeroshotbuilders/commons-testing@npm:^0.0.3, @zeroshotbuilders/commons-testing@workspace:packages/commons-testing":
+"@zeroshotbuilders/commons-testing@npm:^0.0.4, @zeroshotbuilders/commons-testing@workspace:packages/commons-testing":
   version: 0.0.0-use.local
   resolution: "@zeroshotbuilders/commons-testing@workspace:packages/commons-testing"
   dependencies:
@@ -4399,7 +4399,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@zeroshotbuilders/docling-utils@npm:^0.0.3, @zeroshotbuilders/docling-utils@workspace:packages/docling-utils":
+"@zeroshotbuilders/docling-utils@npm:^0.0.4, @zeroshotbuilders/docling-utils@workspace:packages/docling-utils":
   version: 0.0.0-use.local
   resolution: "@zeroshotbuilders/docling-utils@workspace:packages/docling-utils"
   peerDependencies:
