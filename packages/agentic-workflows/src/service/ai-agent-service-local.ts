@@ -34,6 +34,7 @@ import {
 export class AiAgentServiceLocal implements AiAgentService {
   private static instance: AiAgentServiceLocal = new AiAgentServiceLocal();
   private static responsesByAgentName: Map<string, any[]> = new Map();
+  private static lastResponseByAgentName: Map<string, any> = new Map();
   private static errorsByAgentName: Map<string, string> = new Map();
   private static mockWorkingDir: string | undefined;
 
@@ -82,6 +83,7 @@ export class AiAgentServiceLocal implements AiAgentService {
    */
   public static clearResponses(): void {
     this.responsesByAgentName.clear();
+    this.lastResponseByAgentName.clear();
   }
 
   /**
@@ -96,6 +98,7 @@ export class AiAgentServiceLocal implements AiAgentService {
    */
   public static clearAllOverrides(): void {
     this.responsesByAgentName.clear();
+    this.lastResponseByAgentName.clear();
     this.errorsByAgentName.clear();
     this.mockWorkingDir = undefined;
   }
@@ -176,10 +179,24 @@ export class AiAgentServiceLocal implements AiAgentService {
       agentConfig.name
     );
     if (responses && responses.length > 0) {
-      const response = responses.shift(); // Pop first response from queue
+      const response = responses.shift();
+      AiAgentServiceLocal.lastResponseByAgentName.set(agentConfig.name, response);
       return {
         success: true,
         output: response,
+        workingDir: AiAgentServiceLocal.mockWorkingDir
+      };
+    }
+
+    // If the queue is exhausted but we have a last response, repeat it.
+    // This supports consensus testing where 1 response is set for N runs.
+    const lastResponse = AiAgentServiceLocal.lastResponseByAgentName.get(
+      agentConfig.name
+    );
+    if (lastResponse !== undefined) {
+      return {
+        success: true,
+        output: lastResponse,
         workingDir: AiAgentServiceLocal.mockWorkingDir
       };
     }
