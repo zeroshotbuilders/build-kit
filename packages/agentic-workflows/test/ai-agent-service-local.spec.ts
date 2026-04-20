@@ -139,14 +139,14 @@ describe("AiAgentServiceLocal", () => {
       expect(result.output).toEqual({});
     });
 
-    it("should fall back to default after all mocked responses are consumed", async () => {
+    it("should repeat last response after all mocked responses are consumed", async () => {
       const agentConfig: AgentConfig<string> = { name: "ExhaustedAgent", instructions: "Test agent", tools: [] };
       AiAgentServiceLocal.setResponses("ExhaustedAgent", ["Response 1", "Response 2"]);
       await service.createAndRun(agentConfig, { input: "1" });
       await service.createAndRun(agentConfig, { input: "2" });
       const result = await service.createAndRun(agentConfig, { input: "3" });
       expect(result.success).toBe(true);
-      expect(result.output).toBe("Mock response for ExhaustedAgent");
+      expect(result.output).toBe("Response 2");
     });
   });
 
