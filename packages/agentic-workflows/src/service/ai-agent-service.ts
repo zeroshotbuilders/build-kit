@@ -1,11 +1,6 @@
-import type {
-  InputGuardrail,
-  ModelSettings,
-  Session,
-  UnknownContext
-} from "@openai/agents";
-import { Agent, Tool } from "@openai/agents";
-import { z } from "zod";
+import type {InputGuardrail, ModelSettings, Session, UnknownContext} from "@openai/agents";
+import {Agent, Tool} from "@openai/agents";
+import {z} from "zod";
 
 /**
  * Configuration for an AI agent run
