@@ -1,11 +1,6 @@
-import type {
-  InputGuardrail,
-  ModelSettings,
-  Session,
-  UnknownContext
-} from "@openai/agents";
-import { Agent, Tool } from "@openai/agents";
-import { z } from "zod";
+import type {InputGuardrail, ModelSettings, Session, UnknownContext} from "@openai/agents";
+import {Agent, Tool} from "@openai/agents";
+import {z} from "zod";
 
 /**
  * Configuration for an AI agent run
@@ -40,6 +35,32 @@ export interface AgentRunResult<T = any> {
 }
 
 /**
+ * Strategy for resolving consensus across multiple agent runs
+ */
+export enum ConsensusStrategy {
+  /** Most common output wins (uses equality comparison). Requires odd number of runs. */
+  MAJORITY = "majority",
+  /** All runs must produce the same output or the consensus fails. */
+  UNANIMOUS = "unanimous",
+  /** A user-provided judge function decides the winning output. */
+  JUDGE = "judge"
+}
+
+/**
+ * Result from a consensus agent run, extending AgentRunResult with multi-run metadata
+ */
+export interface ConsensusRunResult<T = any> extends AgentRunResult<T> {
+  /** All individual run results (including failures) */
+  runs: AgentRunResult<T>[];
+  /** Fraction of successful runs that agreed with the winning output (e.g. 0.8 = 4/5) */
+  agreement: number;
+  /** Total number of runs requested */
+  totalRuns: number;
+  /** Number of runs that completed successfully */
+  successfulRuns: number;
+}
+
+/**
  * Configuration for creating an AI agent
  */
 export interface AgentConfig<T = any> {
@@ -62,10 +83,7 @@ export interface AgentConfig<T = any> {
 /**
  * Helper type for Agent with Zod output type
  */
-export type AgentType<T> = Agent<
-  UnknownContext,
-  T extends string ? undefined : z.ZodType<T>
->;
+export type AgentType<T> = Agent<UnknownContext, any>;
 
 /**
  * Interface for AI agent services that abstracts the underlying provider.

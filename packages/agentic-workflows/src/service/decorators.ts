@@ -9,7 +9,9 @@ import {
   AgentConfig,
   AgentRunConfig,
   AgentRunResult,
-  AiAgentService
+  AiAgentService,
+  ConsensusRunResult,
+  ConsensusStrategy
 } from "./ai-agent-service";
 import {
   generateToolsReference,
@@ -66,6 +68,131 @@ export type AgentOptions<T> = {
 };
 
 /**
+ * Options for ConsensusAgent, extending AgentOptions with multi-run consensus configuration.
+ */
+export type ConsensusAgentOptions<T> = AgentOptions<T> & {
+  /** Number of concurrent runs. Must be odd. */
+  runs: number;
+  /** Strategy for resolving consensus across runs. */
+  consensusStrategy: ConsensusStrategy;
+  /**
+   * Judge function, required when consensusStrategy is JUDGE.
+   * Receives the class instance and all successful run results, returns the winning result.
+   * Typically delegates to another @Agent method on the same class.
+   */
+  judge?: (
+    instance: any,
+    results: AgentRunResult<T>[]
+  ) => Promise<AgentRunResult<T>>;
+  /**
+   * Optional [min, max] temperature range. If provided, each run gets a linearly
+   * interpolated temperature across the range. If omitted, all runs use the same
+   * temperature from modelSettings.
+   */
+  temperatureSpread?: [number, number];
+};
+
+// -- Shared helpers for @Agent and @ConsensusAgent --
+
+interface PreparedAgentExecution<T> {
+  aiAgentService: AiAgentService;
+  agentConfig: AgentConfig<T>;
+  runConfig: AgentRunConfig;
+}
+
+function prepareAgentExecution<T>(
+  parentInstance: any,
+  target: any,
+  propertyKey: string | symbol,
+  options: AgentOptions<T>,
+  parameterMapper: AgentParameterMapper,
+  args: any[]
+): PreparedAgentExecution<T> {
+  const aiAgentService: AiAgentService = parentInstance.aiAgentService;
+
+  if (!aiAgentService) {
+    throw new Error(
+      "aiAgentService not found on the class instance. Make sure it is injected as 'aiAgentService'."
+    );
+  }
+
+  const promptsDirectory =
+    parentInstance.agenticWorkflowOptions?.promptsDirectory;
+  if (!promptsDirectory) {
+    throw new Error("promptsDirectory not specified in @AgenticWorkflow");
+  }
+
+  const filePath = path.join(
+    promptsDirectory,
+    `${propertyKey.toString()}.md`
+  );
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Prompt file not found: ${filePath}`);
+  }
+  const rawMarkdown = fs.readFileSync(filePath, "utf-8");
+
+  const { frontmatter, content } = parsePromptFrontmatter(rawMarkdown);
+
+  const tools =
+    typeof options.tools === "function"
+      ? options.tools(parentInstance)
+      : options.tools;
+
+  const toolRegistry = parentInstance.agenticWorkflowOptions?.toolRegistry;
+  if (frontmatter.tools && frontmatter.tools.length > 0) {
+    if (toolRegistry) {
+      const declaredToolNames = mapToolKeys(frontmatter.tools, toolRegistry);
+      if (tools) {
+        validateToolsMatch(declaredToolNames, tools);
+      }
+    }
+  }
+
+  const toolsReference = tools ? generateToolsReference(tools) : "";
+  const instructions = toolsReference + content;
+
+  const agentName =
+    options.name ?? `${target.constructor.name}:${propertyKey.toString()}`;
+
+  const agentConfig: AgentConfig<T> = {
+    name: agentName,
+    instructions,
+    tools,
+    model: options.model,
+    modelSettings: options.modelSettings,
+    outputSchema: options.outputSchema
+  };
+
+  const { input, context } = parameterMapper.mapArguments(args);
+
+  const maybeSession: RepositorySession = args.find(
+    (arg) => arg instanceof RepositorySession
+  );
+
+  let branch: string | undefined;
+  if (options.branchParam) {
+    const paramNames = parameterMapper.getParameterNames();
+    const branchIdx = paramNames.indexOf(options.branchParam);
+    if (branchIdx >= 0 && typeof args[branchIdx] === "string") {
+      branch = args[branchIdx];
+    }
+  }
+
+  const hasTools = tools && tools.length > 0;
+  const maxTurns = options.maxTurns ?? (hasTools ? 8 : 1);
+
+  const runConfig: AgentRunConfig = {
+    input,
+    context,
+    session: maybeSession,
+    maxTurns,
+    branch
+  };
+
+  return { aiAgentService, agentConfig, runConfig };
+}
+
+/**
  * Decorator for a class method that executes an AI agent
  * @param options
  * @constructor
@@ -82,101 +209,196 @@ export function Agent<T>(options: AgentOptions<T>): MethodDecorator {
     descriptor.value = async function (
       ...args: any[]
     ): Promise<AgentRunResult<T>> {
-      const parentInstance = this as any;
-      const aiAgentService: AiAgentService = parentInstance.aiAgentService;
-
-      if (!aiAgentService) {
-        throw new Error(
-          "aiAgentService not found on the class instance. Make sure it is injected as 'aiAgentService'."
-        );
-      }
-
-      const promptsDirectory =
-        parentInstance.agenticWorkflowOptions?.promptsDirectory;
-      if (!promptsDirectory) {
-        throw new Error("promptsDirectory not specified in @AgenticWorkflow");
-      }
-
-      const filePath = path.join(
-        promptsDirectory,
-        `${propertyKey.toString()}.md`
-      );
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`Prompt file not found: ${filePath}`);
-      }
-      const rawMarkdown = fs.readFileSync(filePath, "utf-8");
-
-      // Parse frontmatter from the markdown file
-      const { frontmatter, content } = parsePromptFrontmatter(rawMarkdown);
-
-      const tools =
-        typeof options.tools === "function"
-          ? options.tools(parentInstance)
-          : options.tools;
-
-      // If frontmatter declares tools and a registry is provided, validate
-      const toolRegistry = parentInstance.agenticWorkflowOptions?.toolRegistry;
-      if (frontmatter.tools && frontmatter.tools.length > 0) {
-        if (toolRegistry) {
-          // Map tool keys to tool names and validate
-          const declaredToolNames = mapToolKeys(
-            frontmatter.tools,
-            toolRegistry
-          );
-          if (tools) {
-            validateToolsMatch(declaredToolNames, tools);
-          }
-        }
-      }
-
-      // Generate tools reference documentation and inject it into instructions
-      const toolsReference = tools ? generateToolsReference(tools) : "";
-      const instructions = toolsReference + content;
-
-      const agentName =
-        options.name ?? `${target.constructor.name}:${propertyKey.toString()}`;
-
-      const agentConfig: AgentConfig<T> = {
-        name: agentName,
-        instructions,
-        tools,
-        model: options.model,
-        modelSettings: options.modelSettings,
-        outputSchema: options.outputSchema
-      };
-
-      const { input, context } = parameterMapper.mapArguments(args);
-
-      const maybeSession: RepositorySession = args.find(
-        (arg) => arg instanceof RepositorySession
-      );
-
-      // Extract branch from the named parameter if branchParam is specified
-      let branch: string | undefined;
-      if (options.branchParam) {
-        const paramNames = parameterMapper.getParameterNames();
-        const branchIdx = paramNames.indexOf(options.branchParam);
-        if (branchIdx >= 0 && typeof args[branchIdx] === "string") {
-          branch = args[branchIdx];
-        }
-      }
-
-      // Default maxTurns: 1 for agents without tools (they complete in a single turn),
-      // 8 for agents with tools (to allow for multi-step tool call + response cycles)
-      const hasTools = tools && tools.length > 0;
-      const maxTurns = options.maxTurns ?? (hasTools ? 8 : 1);
-
-      const runConfig: AgentRunConfig = {
-        input,
-        context,
-        session: maybeSession,
-        maxTurns,
-        branch
-      };
+      const { aiAgentService, agentConfig, runConfig } =
+        prepareAgentExecution(this, target, propertyKey, options, parameterMapper, args);
 
       return timeFunction(
         () => aiAgentService.createAndRun(agentConfig, runConfig),
         agentConfig.name
+      );
+    };
+  };
+}
+
+/**
+ * Resolves consensus from multiple agent run results using the specified strategy.
+ */
+function resolveConsensus<T>(
+  results: AgentRunResult<T>[],
+  allResults: AgentRunResult<T>[],
+  strategy: ConsensusStrategy
+): ConsensusRunResult<T> {
+  const totalRuns = allResults.length;
+  const successfulRuns = results.length;
+
+  if (successfulRuns === 0) {
+    return {
+      output: undefined as any,
+      success: false,
+      error: "All runs failed — no outputs to compare",
+      runs: allResults,
+      agreement: 0,
+      totalRuns,
+      successfulRuns: 0
+    };
+  }
+
+  if (strategy === ConsensusStrategy.MAJORITY) {
+    const groups = new Map<string, AgentRunResult<T>[]>();
+    for (const result of results) {
+      const key = JSON.stringify(result.output);
+      const group = groups.get(key) || [];
+      group.push(result);
+      groups.set(key, group);
+    }
+
+    let largestGroup: AgentRunResult<T>[] = [];
+    for (const group of groups.values()) {
+      if (group.length > largestGroup.length) {
+        largestGroup = group;
+      }
+    }
+
+    return {
+      output: largestGroup[0].output,
+      success: true,
+      runs: allResults,
+      agreement: largestGroup.length / successfulRuns,
+      totalRuns,
+      successfulRuns
+    };
+  }
+
+  if (strategy === ConsensusStrategy.UNANIMOUS) {
+    const firstOutput = JSON.stringify(results[0].output);
+    const allAgree = results.every(
+      (r) => JSON.stringify(r.output) === firstOutput
+    );
+
+    if (!allAgree) {
+      return {
+        output: undefined as any,
+        success: false,
+        error: "Unanimous consensus not reached — outputs differ",
+        runs: allResults,
+        agreement: 0,
+        totalRuns,
+        successfulRuns
+      };
+    }
+
+    return {
+      output: results[0].output,
+      success: true,
+      runs: allResults,
+      agreement: 1,
+      totalRuns,
+      successfulRuns
+    };
+  }
+
+  // JUDGE strategy is handled in the decorator itself since it needs the instance
+  throw new Error(`Unexpected consensus strategy: ${strategy}`);
+}
+
+/**
+ * Decorator for a class method that executes an AI agent multiple times concurrently
+ * and resolves the outputs into a single consensus result.
+ * @param options
+ * @constructor
+ */
+export function ConsensusAgent<T>(
+  options: ConsensusAgentOptions<T>
+): MethodDecorator {
+  if (options.runs % 2 === 0) {
+    throw new Error(
+      `ConsensusAgent requires an odd number of runs, got ${options.runs}`
+    );
+  }
+
+  if (
+    options.consensusStrategy === ConsensusStrategy.JUDGE &&
+    !options.judge
+  ) {
+    throw new Error(
+      "ConsensusAgent with JUDGE strategy requires a judge function"
+    );
+  }
+
+  return function (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor
+  ) {
+    const originalMethod = descriptor.value;
+    const parameterMapper = AgentParameterMapper.create(originalMethod);
+
+    descriptor.value = async function (
+      ...args: any[]
+    ): Promise<ConsensusRunResult<T>> {
+      const { aiAgentService, agentConfig, runConfig } =
+        prepareAgentExecution(this, target, propertyKey, options, parameterMapper, args);
+
+      const runPromises: Promise<AgentRunResult<T>>[] = [];
+
+      for (let i = 0; i < options.runs; i++) {
+        // Build per-run config, potentially varying temperature
+        let perRunAgentConfig = agentConfig;
+        if (options.temperatureSpread) {
+          const [minTemp, maxTemp] = options.temperatureSpread;
+          const t =
+            options.runs === 1
+              ? minTemp
+              : minTemp + (maxTemp - minTemp) * (i / (options.runs - 1));
+          perRunAgentConfig = {
+            ...agentConfig,
+            modelSettings: {
+              ...agentConfig.modelSettings,
+              temperature: t
+            }
+          };
+        }
+
+        runPromises.push(
+          aiAgentService.createAndRun(perRunAgentConfig, runConfig)
+        );
+      }
+
+      const allResults = await timeFunction(
+        () => Promise.all(runPromises),
+        `${agentConfig.name}:consensus(${options.runs})`
+      );
+
+      const successfulResults = allResults.filter((r) => r.success);
+
+      // For JUDGE strategy, delegate to the user-provided judge function
+      if (options.consensusStrategy === ConsensusStrategy.JUDGE) {
+        if (successfulResults.length === 0) {
+          return {
+            output: undefined as any,
+            success: false,
+            error: "All runs failed — no outputs for judge to evaluate",
+            runs: allResults,
+            agreement: 0,
+            totalRuns: options.runs,
+            successfulRuns: 0
+          };
+        }
+
+        const judgeResult = await options.judge!(this, successfulResults);
+        return {
+          ...judgeResult,
+          runs: allResults,
+          agreement: 0, // Judge doesn't produce a numeric agreement
+          totalRuns: options.runs,
+          successfulRuns: successfulResults.length
+        };
+      }
+
+      return resolveConsensus(
+        successfulResults,
+        allResults,
+        options.consensusStrategy
       );
     };
   };

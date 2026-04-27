@@ -9,8 +9,9 @@
     "access": "public"
   },
   "dependencies": {
-    "@openai/agents": "^0.3.0",
-    "openai": "^4.77.0"
+    "@openai/agents": "0.3.0",
+    "openai": "4.77.0",
+    "zod": "^3.25.40"
   },
   "peerDependencies": {
     "@nestjs/common": ">=10.0.0",

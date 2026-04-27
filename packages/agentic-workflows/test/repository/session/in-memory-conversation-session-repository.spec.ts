@@ -83,7 +83,7 @@ describe("InMemoryConversationSessionRepository", () => {
   describe("RepositorySession with InMemory", () => {
     it("should work as an OpenAI Agents SDK Session", async () => {
       const sessionModel = await repository.createSession(clientId);
-      const session = new RepositorySession(sessionModel.sessionId, repository);
+      const session: any = new RepositorySession(sessionModel.sessionId, repository);
       await session.addItems([
         { role: "user", content: "Hello" },
         { role: "assistant", content: "Hi!" }
@@ -104,7 +104,7 @@ describe("InMemoryConversationSessionRepository", () => {
     describe("chat message filtering (execution artifact removal)", () => {
       it("should only persist user, assistant, and system messages", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { role: "assistant", content: "Hi there!" },
@@ -119,7 +119,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should filter out reasoning items when adding", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { role: "reasoning", content: "Internal reasoning..." } as any,
@@ -133,7 +133,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should filter out tool_call items when adding", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Search for something" },
           { role: "tool_call", content: "search query", id: "call_123" } as any,
@@ -147,7 +147,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should filter out tool_result items when adding", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Search for something" },
           { role: "tool_result", content: "search results", callId: "call_123" } as any,
@@ -161,7 +161,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should filter out items with type instead of role", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { type: "reasoning", content: "Internal reasoning..." } as any,
@@ -176,7 +176,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should handle empty items array when all items are execution artifacts", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "reasoning", content: "Reasoning 1" } as any,
           { role: "tool_call", content: "Tool call" } as any,
@@ -188,7 +188,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should NOT preserve metadata like tool_calls on assistant messages", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { role: "assistant", content: "Let me search for that", tool_calls: [{ id: "call_123", name: "search" }] } as any
@@ -202,7 +202,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should return plain chat messages without any metadata", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { role: "assistant", content: "Hi!" }
@@ -217,7 +217,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should handle non-string content by JSON stringifying and converting to content parts", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         const arrayContent = [{ type: "text", text: "Hello" }];
         await session.addItems([{ role: "user", content: arrayContent } as any]);
         const items = await session.getItems();
@@ -228,7 +228,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should handle array content (like assistant content parts) correctly", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         const arrayContent = [{ type: "output_text", text: "Hello, how can I help you?", annotations: [] as any[], logprobs: [] as any[] }];
         await session.addItems([{ role: "assistant", content: arrayContent } as any]);
         const items = await session.getItems();
@@ -239,7 +239,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should convert plain string content to content parts array", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await session.addItems([
           { role: "user", content: "Hello" },
           { role: "assistant", content: "Hi there!" }
@@ -254,7 +254,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should return plain chat message from popItem without metadata", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await repository.addConversationItems(sessionModel.sessionId, [
           { role: "user", content: "Hello" },
           { role: "assistant", content: "Hi!", metadata: { id: "msg_123", type: "message" } }
@@ -269,7 +269,7 @@ describe("InMemoryConversationSessionRepository", () => {
 
       it("should handle legacy data with reasoning role by returning all stored items", async () => {
         const sessionModel = await repository.createSession(clientId);
-        const session = new RepositorySession(sessionModel.sessionId, repository);
+        const session: any = new RepositorySession(sessionModel.sessionId, repository);
         await repository.addConversationItems(sessionModel.sessionId, [
           { role: "user", content: "Hello" },
           { role: "reasoning", content: "Internal reasoning..." },

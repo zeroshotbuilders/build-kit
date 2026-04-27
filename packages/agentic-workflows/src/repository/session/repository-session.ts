@@ -28,13 +28,13 @@ export class RepositorySession implements Session {
   private toContentParts(
     role: "user" | "assistant" | "system",
     content: string
-  ): { type: string; text: string }[] {
+  ) {
     if (role === "user") {
-      return [{ type: "input_text", text: content }];
+      return [{ type: "input_text" as const, text: content }];
     }
 
     // assistant + system
-    return [{ type: "output_text", text: content }];
+    return [{ type: "output_text" as const, text: content }];
   }
 
   /**
@@ -51,13 +51,13 @@ export class RepositorySession implements Session {
       limit
     );
 
-    const items: AgentInputItem[] = dbItems.map((item) => ({
-      role: item.role as "user" | "assistant" | "system",
-      content: this.toContentParts(
-        item.role as "user" | "assistant" | "system",
-        item.content
-      )
-    }));
+    const items: AgentInputItem[] = dbItems.map((item) => {
+      const role = item.role as "user" | "assistant" | "system";
+      return {
+        role,
+        content: this.toContentParts(role, item.content)
+      } as AgentInputItem;
+    });
 
     if (!limit) {
       this.cachedItems = items;
@@ -75,10 +75,11 @@ export class RepositorySession implements Session {
     // Down-project aggressively: only keep human-visible chat turns
     const messages = items
       .filter(
-        (item) =>
-          item.role === "user" ||
-          item.role === "assistant" ||
-          item.role === "system"
+        (item): item is AgentInputItem & { role: string; content: unknown } =>
+          "role" in item &&
+          (item.role === "user" ||
+            item.role === "assistant" ||
+            item.role === "system")
       )
       .map((item) => ({
         role: item.role as string,
@@ -112,12 +113,10 @@ export class RepositorySession implements Session {
       return undefined;
     }
 
+    const role = poppedItem.role as "user" | "assistant" | "system";
     return {
-      role: poppedItem.role as "user" | "assistant" | "system",
-      content: this.toContentParts(
-        poppedItem.role as "user" | "assistant" | "system",
-        poppedItem.content
-      )
-    };
+      role,
+      content: this.toContentParts(role, poppedItem.content)
+    } as AgentInputItem;
   }
 }

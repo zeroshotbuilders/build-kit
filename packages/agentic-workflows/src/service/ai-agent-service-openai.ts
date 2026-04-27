@@ -30,10 +30,10 @@ export class AiAgentServiceOpenai implements AiAgentService {
       instructions: config.instructions,
       model: config.model ?? this.defaultModel,
       tools: config.tools ?? [],
-      outputType: config.outputSchema,
+      outputType: config.outputSchema as any,
       modelSettings: config.modelSettings,
       inputGuardrails: config.inputGuardrails ?? []
-    }) as AgentType<T>;
+    }) as unknown as AgentType<T>;
   }
 
   public async runAgent<T>(

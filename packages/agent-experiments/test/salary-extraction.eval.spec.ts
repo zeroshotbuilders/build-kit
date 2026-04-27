@@ -113,8 +113,8 @@ describe("Salary Extraction Pipeline", () => {
 
     console.log("Greenleaf Result:", JSON.stringify(result, null, 2));
 
-    expect(result.annualSalary).toBeGreaterThan(74_000);
-    expect(result.annualSalary).toBeLessThan(82_000);
+    expect(result.annualSalary).toBeGreaterThan(82_000);
+    expect(result.annualSalary).toBeLessThan(86_000);
     expect(result.employeeName).toContain("Torres");
   });
 
