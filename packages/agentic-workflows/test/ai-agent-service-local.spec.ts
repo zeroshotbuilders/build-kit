@@ -200,7 +200,7 @@ describe("AiAgentServiceLocal", () => {
       const linkExtractionConfig: AgentConfig<{ links: string[] }> = {
         name: "TestAgent:extractLinks",
         instructions: "Extract links",
-        outputSchema: z.object({ links: z.array(z.string()) }),
+        outputSchema: z.object({ links: z.array(z.string()) }) as any,
         tools: []
       };
       AiAgentServiceLocal.setResponse("TestAgent:extractLinks", {
@@ -235,7 +235,7 @@ describe("AiAgentServiceLocal", () => {
       const synthesisConfig: AgentConfig<{ steps: string[] }> = {
         name: "TestAgent:synthesizeFindings",
         instructions: "Synthesize findings",
-        outputSchema: z.object({ steps: z.array(z.string()) }),
+        outputSchema: z.object({ steps: z.array(z.string()) }) as any,
         tools: []
       };
       AiAgentServiceLocal.setResponse("TestAgent:synthesizeFindings", {

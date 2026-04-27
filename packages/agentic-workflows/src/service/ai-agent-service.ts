@@ -88,10 +88,7 @@ export interface AgentConfig<T = any> {
 /**
  * Helper type for Agent with Zod output type
  */
-export type AgentType<T> = Agent<
-  UnknownContext,
-  T extends string ? undefined : z.ZodType<T>
->;
+export type AgentType<T> = Agent<UnknownContext, any>;
 
 /**
  * Interface for AI agent services that abstracts the underlying provider.

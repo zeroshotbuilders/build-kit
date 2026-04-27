@@ -150,10 +150,16 @@ export class AiAgentServiceLocal implements AiAgentService {
         { role: "user", content: runConfig.input },
         {
           role: "assistant",
-          content:
-            typeof result.output === "string"
-              ? result.output
-              : JSON.stringify(result.output)
+          status: "completed",
+          content: [
+            {
+              type: "output_text",
+              text:
+                typeof result.output === "string"
+                  ? result.output
+                  : JSON.stringify(result.output)
+            }
+          ]
         }
       ]);
     }
